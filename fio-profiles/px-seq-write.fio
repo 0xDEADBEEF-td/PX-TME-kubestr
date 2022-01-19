@@ -1,0 +1,24 @@
+##Sequential Write 256k blocksize test
+[global]
+ioengine=libaio
+size=10GiB
+name=fio-seq-write
+direct=1
+iodepth=128
+numjobs=1
+group_reporting=1
+
+##----layout file-------
+[256k-init-write]
+blocksize=256k
+filename=/dataset/fio.dat
+readwrite=write
+end_fsync=1
+
+##----Begin 256k tests-------
+[256k-seq-write]
+stonewall
+blocksize=256k
+filename=/dataset/fio.dat
+readwrite=write
+end_fsync=1
