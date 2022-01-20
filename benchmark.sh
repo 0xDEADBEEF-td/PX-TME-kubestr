@@ -123,7 +123,7 @@ check_pvc
 }
 
 
-# Main - run FIO benchmarks and 5x pgbench (to be averaged manually)
+# Main - run FIO benchmarks and 3x pgbench (to be averaged manually)
 fio_benchmark
 
 for i in {1..3}
