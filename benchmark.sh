@@ -108,10 +108,10 @@ sleep 5
 
 # Create/initialize sampledb
 kubectl exec -i postgres-0 -- bash -c "createdb -U admin sampledb"
-kubectl exec -i postgres-0 -- bash -c "pgbench -U admin -i -s 10 sampledb"
+kubectl exec -i postgres-0 -- bash -c "pgbench -U admin -i -s 600 sampledb"
 
 # Run pgbench TPC-B
-kubectl exec -i postgres-0 -- bash -c "pgbench -U admin -c 10 -j 2 -t 10000 sampledb" > pgbench-$STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').txt
+kubectl exec -i postgres-0 -- bash -c "pgbench -U admin -c 1 -j 1 -T 600 sampledb" > pgbench-$STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').txt
 }
 
 pgbench_cleanup() {
@@ -124,9 +124,9 @@ check_pvc
 
 
 # Main - run FIO benchmarks and 5x pgbench (to be averaged manually)
-fio_benchmark
+#fio_benchmark
 
-for i in {1..5}
+for i in {1..3}
 do
     pgbench
     pgbench_cleanup
