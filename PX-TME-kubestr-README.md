@@ -17,7 +17,7 @@ A total of 6x FIO tests will run, these take approximately 20 minutes total to c
  - Sequential Read 100% 256k block size, 10Gi file
  - Sequential Write 100% 256k block size, 10Gi file
 
-Once FIO tests have completed, 5x pgbench runs will execute, the timing on these is dependent on how fast the system you are running on is. Each run performs the following:
+Once FIO tests have completed, 3x pgbench runs will execute, the timing on these is dependent on how fast the system you are running on is. Each run performs the following:
  - Creates a 20Gi PVC for the postgres container
  - Deploys the postgres:14.1-alpine image and mounts the PV to the data directory (PGDATA)
  - Creates "sampledb" (kubectl exec -i postgres-0 -- bash -c "createdb -U admin sampledb")
