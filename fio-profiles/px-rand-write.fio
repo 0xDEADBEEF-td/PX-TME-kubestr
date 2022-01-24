@@ -12,7 +12,7 @@ group_reporting=1
 [4k-init-write]
 blocksize=4k
 filename=/dataset/fio.dat
-readwrite=write
+readwrite=randwrite
 end_fsync=1
 
 ##----Begin 4k tests-------

@@ -1,15 +1,17 @@
 #!/bin/bash
-STORAGECLASS=portworx-sc
+RAND_STORAGECLASS=portworx-sc
+SEQ_STORAGECLASS=portworx-sc
+DB_STORAGECLASS=portworx-sc
 # Size of PVC used for FIO testing
 FIOSIZE=50Gi
 
 check_pvc () {
-PVCNUM=$(kubectl get pvc -A -o jsonpath='{.items[*].spec.storageClassName}' | grep $STORAGECLASS | wc -w)
+PVCNUM=$(kubectl get pvc -A -o jsonpath='{.items[*].spec.storageClassName}' | grep $1 | wc -w)
 
 until [ "$PVCNUM" = "0" ]; do
-   echo "PVC found for StorageClass $STORAGECLASS. Waiting until existing PVC is removed/deleted."
+   echo "PVC found for StorageClass $1. Waiting until existing PVC is removed/deleted."
    sleep 10 
-   PVCNUM=$(kubectl get pvc -A -o jsonpath='{.items[*].spec.storageClassName}' | grep $STORAGECLASS | wc -w)
+   PVCNUM=$(kubectl get pvc -A -o jsonpath='{.items[*].spec.storageClassName}' | grep $1 | wc -w)
 done
 }
 
@@ -22,70 +24,86 @@ else
     exit 1
 fi
 
-kubectl get sc | grep -q $STORAGECLASS
-SC_EXIST=$(echo $?)
+# Check for existence of the RAND_STORAGECLASS
+kubectl get sc | grep -q $RAND_STORAGECLASS
+RAND_SC_EXIST=$(echo $?)
 
-if [ "$SC_EXIST" = "0" ]; then
-    echo "Found StorageClass $STORAGECLASS, executing FIO benchmarks."
-    unset SC_EXIST
+if [ "$RAND_SC_EXIST" = "0" ]; then
+    echo "Found StorageClass $RAND_STORAGECLASS, executing FIO benchmarks."
+    unset RAND_SC_EXIST
 else
-    echo "Could not find StorageClass $STORAGECLASS, please ensure you have created the StorageClass you wish to test and try again."
+    echo "Could not find StorageClass $RAND_STORAGECLASS, please ensure you have created the StorageClass you wish to test and try again."
     exit 1
 fi
 
-check_pvc
+# Check for existence of the SEQ_STORAGECLASS
+kubectl get sc | grep -q $SEQ_STORAGECLASS
+SEQ_SC_EXIST=$(echo $?)
+
+if [ "$SEQ_SC_EXIST" = "0" ]; then
+    echo "Found StorageClass $SEQ_STORAGECLASS, executing FIO benchmarks."
+    unset SEQ_SC_EXIST
+else
+    echo "Could not find StorageClass $SEQ_STORAGECLASS, please ensure you have created the StorageClass you wish to test and try again."
+    exit 1
+fi
+
+check_pvc $RAND_STORAGECLASS
 
 echo "Running random RW mix FIO profile. System time is $(date)"
-./kubestr fio -z $FIOSIZE -s $STORAGECLASS -f fio-profiles/px-rand-RW.fio -o json -e rand-RW-$STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
+./kubestr fio -z $FIOSIZE -s $RAND_STORAGECLASS -f fio-profiles/px-rand-RW.fio -o json -e rand-RW-$RAND_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
 
-check_pvc
+check_pvc $RAND_STORAGECLASS
+check_pvc $SEQ_STORAGECLASS
 
 echo "Running sequential RW mix FIO profile. System time is $(date)"
-./kubestr fio -z $FIOSIZE -s $STORAGECLASS -f fio-profiles/px-seq-RW.fio -o json -e seq-RW-$STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
+./kubestr fio -z $FIOSIZE -s $SEQ_STORAGECLASS -f fio-profiles/px-seq-RW.fio -o json -e seq-RW-$SEQ_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
 
-check_pvc
+check_pvc $SEQ_STORAGECLASS
+check_pvc $RAND_STORAGECLASS
 
 echo "Running random read FIO profile. System time is $(date)"
-./kubestr fio -z $FIOSIZE -s $STORAGECLASS -f fio-profiles/px-rand-read.fio -o json -e rand-read-$STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
+./kubestr fio -z $FIOSIZE -s $RAND_STORAGECLASS -f fio-profiles/px-rand-read.fio -o json -e rand-read-$RAND_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
 
-check_pvc
+check_pvc $RAND_STORAGECLASS
 
 echo "Running random write FIO profile. System time is $(date)"
-./kubestr fio -z $FIOSIZE -s $STORAGECLASS -f fio-profiles/px-rand-write.fio -o json -e rand-write-$STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
+./kubestr fio -z $FIOSIZE -s $RAND_STORAGECLASS -f fio-profiles/px-rand-write.fio -o json -e rand-write-$RAND_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
 
-check_pvc
+check_pvc $RAND_STORAGECLASS
+check_pvc $SEQ_STORAGECLASS
 
 echo "Running sequential read FIO profile. System time is $(date)"
-./kubestr fio -z $FIOSIZE -s $STORAGECLASS -f fio-profiles/px-seq-read.fio -o json -e seq-read-$STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
+./kubestr fio -z $FIOSIZE -s $SEQ_STORAGECLASS -f fio-profiles/px-seq-read.fio -o json -e seq-read-$SEQ_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
 
-check_pvc
+check_pvc $SEQ_STORAGECLASS
 
 echo "Running sequential write FIO profile. System time is $(date)"
-./kubestr fio -z $FIOSIZE -s $STORAGECLASS -f fio-profiles/px-seq-write.fio -o json -e seq-write-$STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
+./kubestr fio -z $FIOSIZE -s $SEQ_STORAGECLASS -f fio-profiles/px-seq-write.fio -o json -e seq-write-$SEQ_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
 
-check_pvc
+check_pvc $SEQ_STORAGECLASS
 
-echo "All FIO tests completed. Please find results in files named *-$STORAGECLASS.json."
+echo "All FIO tests completed. Please find results in files named *.json."
 }
 
 pgbench () {
 # Check for StorageClass
-kubectl get sc | grep -q $STORAGECLASS
-SC_EXIST=$(echo $?)
+kubectl get sc | grep -q $DB_STORAGECLASS
+DB_SC_EXIST=$(echo $?)
 
-if [ "$SC_EXIST" = "0" ]; then
-    echo "Found StorageClass $STORAGECLASS, deploying postgres."
-    unset SC_EXIST
+if [ "$DB_SC_EXIST" = "0" ]; then
+    echo "Found StorageClass $DB_STORAGECLASS, deploying postgres."
+    unset DB_SC_EXIST
 else
-    echo "Could not find StorageClass $STORAGECLASS, please ensure you have created the StorageClass you wish to test and try again."
+    echo "Could not find StorageClass $DB_STORAGECLASS, please ensure you have created the StorageClass you wish to test and try again."
     exit 1
 fi
 
-check_pvc
+check_pvc $DB_STORAGECLASS
 
 # Create the Postgres PVC
 cp postgres/postgres-pvc-template.yaml postgres/postgres-pvc.yaml
-sed -i "s/SC_NAME/$STORAGECLASS/g" postgres/postgres-pvc.yaml
+sed -i "s/SC_NAME/$DB_STORAGECLASS/g" postgres/postgres-pvc.yaml
 kubectl apply -f postgres/postgres-pvc.yaml
 rm postgres/postgres-pvc.yaml
 
@@ -111,7 +129,7 @@ kubectl exec -i postgres-0 -- bash -c "createdb -U admin sampledb"
 kubectl exec -i postgres-0 -- bash -c "pgbench -U admin -i -s 600 sampledb"
 
 # Run pgbench TPC-B
-kubectl exec -i postgres-0 -- bash -c "pgbench -U admin -c 1 -j 1 -T 600 sampledb" > pgbench-$STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').txt
+kubectl exec -i postgres-0 -- bash -c "pgbench -U admin -c 1 -j 1 -T 600 sampledb" > pgbench-$DB_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').txt
 }
 
 pgbench_cleanup() {
@@ -119,7 +137,7 @@ kubectl delete sts postgres
 kubectl delete all -l app=postgres
 kubectl delete cm postgres-config
 kubectl delete pvc postgres-data
-check_pvc
+check_pvc $DB_STORAGECLASS
 }
 
 
