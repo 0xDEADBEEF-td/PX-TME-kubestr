@@ -35,5 +35,10 @@ for FILE in *.json; do
     echo "Write IOPS:" $(cat $FILE | $JQ_PATH ."[0].Raw.result.jobs[1].write.iops") >> $SC_NAME-$RUN_NAME.txt
     echo "Write BW (KiB/s):" $(cat $FILE | $JQ_PATH ."[0].Raw.result.jobs[1].write.bw") >> $SC_NAME-$RUN_NAME.txt
     echo "Write Latency (ns):" $(cat $FILE | $JQ_PATH ."[0].Raw.result.jobs[1].write.lat_ns.mean") >> $SC_NAME-$RUN_NAME.txt
- 
+    echo >> $SC_NAME-$RUN_NAME.txt
+    LAYOUT_NAME=$(cat $FILE | $JQ_PATH ."[0].Raw.result.jobs[0].jobname"|sed 's/"//g')
+    echo "File Layout Job Name:" $LAYOUT_NAME >> $SC_NAME-$RUN_NAME.txt
+    FILE_CREATE_MS=$(cat $FILE | $JQ_PATH ."[0].Raw.result.jobs[0].job_runtime"|sed 's/"//g')
+    FILE_CREATE_SEC=$(expr $FILE_CREATE_MS / 1000)
+    echo "Time to layout file:" $FILE_CREATE_SEC seconds >> $SC_NAME-$RUN_NAME.txt
 done
