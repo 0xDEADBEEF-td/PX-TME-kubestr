@@ -4,6 +4,8 @@ SEQ_STORAGECLASS=portworx-sc
 DB_STORAGECLASS=portworx-sc
 # Size of PVC used for FIO testing
 FIOSIZE=50Gi
+# Number of kubestr pods to instantiate
+NUM_WORKLOADS=2
 
 check_pvc () {
 PVCNUM=$(kubectl get pvc -A -o jsonpath='{.items[*].spec.storageClassName}' | grep $1 | wc -w)
@@ -12,6 +14,16 @@ until [ "$PVCNUM" = "0" ]; do
    echo "PVC found for StorageClass $1. Waiting until existing PVC is removed/deleted."
    sleep 10 
    PVCNUM=$(kubectl get pvc -A -o jsonpath='{.items[*].spec.storageClassName}' | grep $1 | wc -w)
+done
+}
+
+check_fio_pod () {
+FIO_PODNUM=$(kubectl get pod | grep kubestr | wc -l)
+
+until [ "$FIO_PODNUM" = "0" ]; do
+  echo "$FIO_PODNUM FIO workloads still running. Waiting for completion of all FIO workloads - system time is $(date)."
+  sleep 60
+  FIO_PODNUM=$(kubectl get pod | grep kubestr | wc -l)
 done
 }
 
@@ -50,37 +62,81 @@ fi
 
 check_pvc $RAND_STORAGECLASS
 
-echo "Running random RW mix FIO profile. System time is $(date)"
-./kubestr fio -z $FIOSIZE -s $RAND_STORAGECLASS -f fio-profiles/px-rand-RW.fio -o json -e rand-RW-$RAND_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
+START=1
 
+echo "Running random RW mix FIO profile with $NUM_WORKLOADS workloads. System time is $(date)"
+i=$START
+while [[ $i -le $NUM_WORKLOADS ]]
+do
+    ./kubestr fio -z $FIOSIZE -s $RAND_STORAGECLASS -f fio-profiles/px-rand-RW.fio -o json -e rand-RW-WL-$i-$RAND_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null &
+    sleep 10
+    ((i = i + 1))
+done
+
+check_fio_pod
 check_pvc $RAND_STORAGECLASS
 check_pvc $SEQ_STORAGECLASS
 
 echo "Running sequential RW mix FIO profile. System time is $(date)"
-./kubestr fio -z $FIOSIZE -s $SEQ_STORAGECLASS -f fio-profiles/px-seq-RW.fio -o json -e seq-RW-$SEQ_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
+i=$START
+while [[ $i -le $NUM_WORKLOADS ]]
+do
+./kubestr fio -z $FIOSIZE -s $SEQ_STORAGECLASS -f fio-profiles/px-seq-RW.fio -o json -e seq-RW-WL-$i-$SEQ_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null &
+    sleep 10
+    ((i = i + 1))
+done
 
+check_fio_pod
 check_pvc $SEQ_STORAGECLASS
 check_pvc $RAND_STORAGECLASS
 
 echo "Running random read FIO profile. System time is $(date)"
-./kubestr fio -z $FIOSIZE -s $RAND_STORAGECLASS -f fio-profiles/px-rand-read.fio -o json -e rand-read-$RAND_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
+i=$START
+while [[ $i -le $NUM_WORKLOADS ]]
+do
+./kubestr fio -z $FIOSIZE -s $RAND_STORAGECLASS -f fio-profiles/px-rand-read.fio -o json -e rand-read-WL-$i-$RAND_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null &
+    sleep 10
+    ((i = i + 1))
+done
 
+check_fio_pod
 check_pvc $RAND_STORAGECLASS
 
 echo "Running random write FIO profile. System time is $(date)"
-./kubestr fio -z $FIOSIZE -s $RAND_STORAGECLASS -f fio-profiles/px-rand-write.fio -o json -e rand-write-$RAND_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
+i=$START
+while [[ $i -le $NUM_WORKLOADS ]]
+do
+./kubestr fio -z $FIOSIZE -s $RAND_STORAGECLASS -f fio-profiles/px-rand-write.fio -o json -e rand-write-WL-$i-$RAND_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null &
+    sleep 10
+    ((i = i + 1))
+done
 
+check_fio_pod
 check_pvc $RAND_STORAGECLASS
 check_pvc $SEQ_STORAGECLASS
 
 echo "Running sequential read FIO profile. System time is $(date)"
-./kubestr fio -z $FIOSIZE -s $SEQ_STORAGECLASS -f fio-profiles/px-seq-read.fio -o json -e seq-read-$SEQ_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
+i=$START
+while [[ $i -le $NUM_WORKLOADS ]]
+do
+./kubestr fio -z $FIOSIZE -s $SEQ_STORAGECLASS -f fio-profiles/px-seq-read.fio -o json -e seq-read-WL-$i-$SEQ_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null &
+    sleep 10
+    ((i = i + 1))
+done
 
+check_fio_pod
 check_pvc $SEQ_STORAGECLASS
 
 echo "Running sequential write FIO profile. System time is $(date)"
-./kubestr fio -z $FIOSIZE -s $SEQ_STORAGECLASS -f fio-profiles/px-seq-write.fio -o json -e seq-write-$SEQ_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null
+i=$START
+while [[ $i -le $NUM_WORKLOADS ]]
+do
+./kubestr fio -z $FIOSIZE -s $SEQ_STORAGECLASS -f fio-profiles/px-seq-write.fio -o json -e seq-write-WL-$i-$SEQ_STORAGECLASS-$(date '+%Y-%m-%d-%H%M%S').json >& /dev/null &
+    sleep 10
+    ((i = i + 1))
+done
 
+check_fio_pod
 check_pvc $SEQ_STORAGECLASS
 
 echo "All FIO tests completed. Please find results in files named *.json."
