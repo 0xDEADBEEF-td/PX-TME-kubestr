@@ -13,7 +13,7 @@ create_fio_profiles () {
   cp fio-profiles/template/*.fio fio-profiles
   SIZE_STRING="size=$FILESIZE+GiB"
   for FILE in fio-profiles/*.fio; do
-    sed -i 's/size=10GiB/$SIZE_STRING/g' $FILE
+    sed -i "s/size=10GiB/$SIZE_STRING/g" $FILE
   done
 }
 
