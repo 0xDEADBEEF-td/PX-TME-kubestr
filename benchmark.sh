@@ -4,8 +4,19 @@ SEQ_STORAGECLASS=portworx-sc
 DB_STORAGECLASS=portworx-sc
 # Size of PVC used for FIO testing
 FIOSIZE=50Gi
+# Size of file used in FIO pod for testing (in GiB)
+FILESIZE=1
 # Number of kubestr pods to instantiate
 NUM_WORKLOADS=2
+
+create_fio_profiles () {
+  cp fio-profiles/template/*.fio fio-profiles
+  SIZE_STRING="size=$FILESIZE+GiB"
+  for FILE in fio-profiles/*.fio; do
+    sed -i 's/size=10GiB/$SIZE_STRING/g' $FILE
+  done
+}
+
 
 check_pvc () {
 PVCNUM=$(kubectl get pvc -A -o jsonpath='{.items[*].spec.storageClassName}' | grep $1 | wc -w)
@@ -198,6 +209,7 @@ check_pvc $DB_STORAGECLASS
 
 
 # Main - run FIO benchmarks and 3x pgbench (to be averaged manually)
+create_fio_profiles
 fio_benchmark
 
 for i in {1..3}
