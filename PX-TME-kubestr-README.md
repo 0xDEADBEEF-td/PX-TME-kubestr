@@ -8,15 +8,16 @@ To run the benchmark, perform the following:
  - Extract the appropriate version of kubestr for your platform (X86_64 Linux or MacOS) and ensure the 'kubestr' binary is in the root of the folder
  - Modify the 'STORAGECLASS' and 'FIOSIZE' variables in the benchmark.sh script to reflect the k8s StorageClass and PVC size (minimum 20Gi) you wish to test with, respectively
  - Modify the 'NUM_WORKLOADS' variable in benchmark.sh to reflect the number of kubestr instances you want to instantiate for each FIO profile
+ - Modify the 'FILESIZE' variable in benchmark.sh to reflect the filesize desired to test within the kubestr FIO pod
  - Execute the benchmark.sh script
 
 A total of 6x FIO tests will run, these take approximately 20 minutes total to complete:
- - Random R/W 60/40 Mix 4k block size, 10Gi file
- - Sequential R/W 60/40 Mix 256k block size, 10Gi file
- - Random Read 100% 4k block size, 10Gi file
- - Random Write 100% 4k block size, 10Gi file
- - Sequential Read 100% 256k block size, 10Gi file
- - Sequential Write 100% 256k block size, 10Gi file
+ - Random R/W 60/40 Mix 4k block size, 10Gi (default) file
+ - Sequential R/W 60/40 Mix 256k block size, 10Gi (default) file
+ - Random Read 100% 4k block size, 10Gi (default) file
+ - Random Write 100% 4k block size, 10Gi (default) file
+ - Sequential Read 100% 256k block size, 10Gi (default) file
+ - Sequential Write 100% 256k block size, 10Gi (default) file
 
 Once FIO tests have completed, 3x pgbench runs will execute, the timing on these is dependent on how fast the system you are running on is. Each run performs the following:
  - Creates a 20Gi PVC for the postgres container
