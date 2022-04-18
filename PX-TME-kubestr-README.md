@@ -7,6 +7,7 @@ To run the benchmark, perform the following:
  - Ensure there are no PVCs created for the StorageClass you wish to use
  - Extract the appropriate version of kubestr for your platform (X86_64 Linux or MacOS) and ensure the 'kubestr' binary is in the root of the folder
  - Modify the 'STORAGECLASS' and 'FIOSIZE' variables in the benchmark.sh script to reflect the k8s StorageClass and PVC size (minimum 20Gi) you wish to test with, respectively
+ - Modify the 'NUM_WORKLOADS' variable in benchmark.sh to reflect the number of kubestr instances you want to instantiate for each FIO profile
  - Execute the benchmark.sh script
 
 A total of 6x FIO tests will run, these take approximately 20 minutes total to complete:
@@ -27,4 +28,4 @@ Once FIO tests have completed, 3x pgbench runs will execute, the timing on these
 
 When the benchmark is completed, there should be 6 files for the FIO results in JSON format with the name {FIO Profile}-{StorageClassName}-{Date}.json, and 3x pgbench results files in text format with the name pgbench-{StorageClassName}-{Date}.txt in the root folder.
 
-For a quick parse of the JSON files to give basic read/write IOPS/latency/throughput statistics, use the script 'kubestr-fio-parser.sh'. Please note this script requires the binary 'jq' to be on your system. Simply run the shell script in the same directory that all of your FIO JSON output files are in, and it will generate text files for each one with the name {storageclassname}-{FIO job name}.txt.
+For a quick parse of the JSON files to give basic read/write IOPS/latency/throughput statistics, use the script 'kubestr-fio-parser.sh'. Please note this script requires the binary 'jq' to be on your system. Simply run the shell script in the same directory that all of your FIO JSON output files are in, and it will generate and more all results to the "results" directory.
