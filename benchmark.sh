@@ -8,6 +8,10 @@ FIOSIZE=50Gi
 FILESIZE=1
 # Number of kubestr pods to instantiate
 NUM_WORKLOADS=2
+# Number of concurrent pgbench workloads to instantiate (only used when calling concurrent pgbench!)
+NUM_PGBENCH_WORKLOADS=2
+# Duration of concurrent pgbench workloads
+PGBENCH_CONCURRENT_DURATION=300
 
 create_fio_profiles () {
   cp fio-profiles/template/*.fio fio-profiles
@@ -207,6 +211,51 @@ kubectl delete pvc postgres-data
 check_pvc $DB_STORAGECLASS
 }
 
+pgbench_concurrent() {
+  PG_START=1
+# Check for StorageClass
+kubectl get sc | grep -q $DB_STORAGECLASS
+DB_SC_EXIST=$(echo $?)
+
+if [ "$DB_SC_EXIST" = "0" ]; then
+    echo "Found StorageClass $DB_STORAGECLASS, deploying postgres."
+    unset DB_SC_EXIST
+else
+    echo "Could not find StorageClass $DB_STORAGECLASS, please ensure you have created the StorageClass you wish to test and try again."
+    exit 1
+fi
+
+check_pvc $DB_STORAGECLASS
+
+i=$PG_START
+while [[ $i -le $NUM_PGBENCH_WORKLOADS ]]
+do
+# Create the Postgres PVC
+cp postgres/postgres-pvc-template.yaml postgres/postgres-pvc-$i.yaml
+sed -i "s/SC_NAME/$DB_STORAGECLASS/g" postgres/postgres-pvc-$i.yaml
+sed -i "s/postgres-data/postgres-data-$i/g" postgres/postgres-pvc-$i.yaml
+kubectl apply -f postgres/postgres-pvc-$i.yaml
+rm postgres/postgres-pvc-$i.yaml
+
+# Deploy postgres
+cp postgres/postgres-concurrent-template.yaml postgres/postgres-$i.yaml
+sed -i "s/postgres-config-N/postgres-config-$i/g" postgres/postgres-$i.yaml
+sed -i "s/postgres-N/postgres-$i/g" postgres/postgres-$i.yaml
+sed -i "s/DURATION-N/$PGBENCH_CONCURRENT_DURATION/g" postgres/postgres-$i.yaml
+sed -i "s/postgres-data-N/postgres-data-$i/g" postgres/postgres-$i.yaml
+
+kubectl apply -f postgres/postgres-$i.yaml
+rm postgres/postgres-$i.yaml
+
+PG_UP=1
+until [ "$PG_UP" = "0" ]; do
+    kubectl get pod | grep postgres-$i | grep -q Running
+    PG_UP=$?
+done
+    sleep 2
+    ((i = i + 1))
+done
+}
 
 # Main - run FIO benchmarks and 3x pgbench (to be averaged manually)
 create_fio_profiles
