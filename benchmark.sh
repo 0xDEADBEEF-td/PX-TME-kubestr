@@ -247,13 +247,14 @@ sed -i "s/postgres-data-N/postgres-data-$i/g" postgres/postgres-$i.yaml
 kubectl apply -f postgres/postgres-$i.yaml
 rm postgres/postgres-$i.yaml
 
-PG_UP=1
-until [ "$PG_UP" = "0" ]; do
-    kubectl get pod | grep postgres-$i-0 | grep -q Running
-    PG_UP=$?
-done
-    sleep 2
+echo "kubectl delete sts postgres-$i" >> pgbench_concurrent_cleanup.sh
+echo "kubectl delete all -l app=postgres-$i" >> pgbench_concurrent_cleanup.sh
+echo "kubectl delete cm postgres-config-$i" >> pgbench_concurrent_cleanup.sh
+echo "kubectl delete pvc postgres-data-$i" >> pgbench_concurrent_cleanup.sh
+chmod 777 pgbench_concurrent_cleanup.sh
+
     ((i = i + 1))
+    sleep 2
 done
 }
 
