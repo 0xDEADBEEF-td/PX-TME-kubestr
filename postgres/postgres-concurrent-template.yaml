@@ -9,7 +9,7 @@ data:
   POSTGRES_DB: benchdb
   POSTGRES_USER: admin
   POSTGRES_PASSWORD: admin
-  POSTGRES_DURATION: DURATION-N
+  POSTGRES_DURATION: "DURATION-N"
   PGDATA: /var/lib/postgresql/data/pgdata
 
 ---

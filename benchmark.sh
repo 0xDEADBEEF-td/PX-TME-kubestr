@@ -249,7 +249,7 @@ rm postgres/postgres-$i.yaml
 
 PG_UP=1
 until [ "$PG_UP" = "0" ]; do
-    kubectl get pod | grep postgres-$i | grep -q Running
+    kubectl get pod | grep postgres-$i-0 | grep -q Running
     PG_UP=$?
 done
     sleep 2
